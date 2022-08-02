@@ -1,20 +1,25 @@
 import { Canvas } from "@react-three/fiber";
+
 import React from "react";
+import Viewer3D from "./Viewer3D";
+import SketchArea from "./SketchArea";
+import ToolBar from "./ToolBar";
+import 'antd/dist/antd.css';
 
 const App = () => {
   return (
-    <>
-      <div style={{ width: "100vw", height: "100vh" }}>
-        <Canvas>
-          <ambientLight />
-          <pointLight position={[10, 10, 10]} />
-          <mesh>
-            <boxBufferGeometry attach="geometry" args={[1, 1, 1]} />
-            <meshNormalMaterial attach="material" />
-          </mesh>
-        </Canvas>
+    <div>
+      <ToolBar />
+      <div style={{ display: "flex" }}>
+        <div style={{ width: "50vw", height: "100vh", display: "inline-block" }}>
+          <SketchArea />
+        </div>
+        <div style={{ width: "50vw", height: "100vh", display: "inline-block" }}>
+          <Viewer3D />
+        </div>
       </div>
-    </>
+
+    </div>
   );
 };
 
