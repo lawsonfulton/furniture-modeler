@@ -1,21 +1,22 @@
 import { Constraint } from "./Constraints";
 
-export default class Solver {
-  constructor(private nPoints: number, private constraints: Constraint[]) {
-    this.nPoints = nPoints;
+export default class ConstraintSolver {
+  constructor(private constraints: Constraint[]) {
     this.constraints = constraints;
   }
 
   value(allPoints: number[]): number {
     let sum = 0;
     for (const constraint of this.constraints) {
-      sum += constraint.value(allPoints) ** 2;
+      sum += constraint.value(allPoints); // ** 2
     }
     return sum;
   }
 
   gradient(allPoints: number[]): number[] {
-    let grad: number[] = Array(this.nPoints).fill(0);
+    // TODO my gradient is wrong because I'm summing over squares 
+    // Do I need to sum over squares? unclear.
+    let grad: number[] = Array(allPoints.length).fill(0);
     for (const constraint of this.constraints) {
       constraint.gradient(allPoints, grad);
     }
@@ -23,7 +24,7 @@ export default class Solver {
   }
 
   solve(allPoints: number[]): number[] {
-    // TODO check this code
+    // TODO check this code and need to find out the name of this gradient descent algo
     let x = [...allPoints];
     let grad = this.gradient(x);
     let prevValue = this.value(x);

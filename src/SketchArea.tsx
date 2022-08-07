@@ -1,12 +1,12 @@
 import React, { ReactElement, useRef, useState } from "react";
-import { Stage, Layer, Rect, Text, Circle, Line, Group } from "react-konva";
+import { Stage, Layer, Rect, Text, Circle, Line, Group, Arc } from "react-konva";
 import Konva from "konva";
 import { Points } from "@react-three/drei";
 import { Tool } from "./App";
 import RadiusPicker from "./RadiusPicker";
-import Solver from "./Solver";
-import { Constraint, FixedPoint, LineSegment, LinesIncident, Point } from "./Constraints";
-
+import Solver from "./ConstraintSolver";
+import { Vector2 } from "three";
+// import { Constraint, FixedPoint, LineSegment, LinesIncident, Point } from "./Constraints";
 
 
 class NodeData {
@@ -150,7 +150,7 @@ export default function SketchArea(props: SketchAreaProps) {
     for (let i = 0; i < props.nodeData.cornerRadii.length; i += 1) {
       nodes.push(
         <Circle
-          key={i.toString()}
+          key={"node-" + i.toString()}
           id={i.toString()}
           x={props.nodeData.points[i * 2]}
           y={props.nodeData.points[i * 2 + 1]}
@@ -164,24 +164,34 @@ export default function SketchArea(props: SketchAreaProps) {
           onClick={e => onClickNode(e, i)}
         />)
     }
+
     return <>
       {nodes}
     </>;
   }
 
-  const RadiusPickerWrapper = (props: { nodeIndex: number | undefined }) => {
-    if (props.nodeIndex === undefined) {
-      return <></>;
-    } else {
-      return <RadiusPicker
-        x={nodeData.points[props.nodeIndex * 2]}
-        y={nodeData.points[props.nodeIndex * 2 + 1]}
-        maxRadius={100}
-        onSetRadius={radius => {
-          setRadius(props.nodeIndex!, radius);
-          setSettingNodeRadIndex(undefined);
-        }} />
+  // Render the nodes and lines
+  const Arcs = (props: { nodeData: NodeData, activeTool: Tool }) => {
+    let arcs: JSX.Element[] = [];
+    for (let i = 0; i < props.nodeData.cornerRadii.length; i += 1) {
+      if (props.nodeData.cornerRadii[i] > 0) {
+        arcs.push(
+          <Arc
+            key={"arc-" + i.toString()}
+            x={props.nodeData.points[i * 2]}
+            y={props.nodeData.points[i * 2 + 1]}
+            angle={45}
+            innerRadius={props.nodeData.cornerRadii[i]}
+            outerRadius={props.nodeData.cornerRadii[i]}
+            strokeEnabled={true}
+            stroke="black" />
+        )
+      }
     }
+
+    return <>
+      {arcs}
+    </>;
   }
 
   const Profile2D = (props: { nodeData: NodeData, activeTool: Tool }) => {
@@ -191,14 +201,30 @@ export default function SketchArea(props: SketchAreaProps) {
         stroke={"#1c1c1cff"}
       />
       <Nodes nodeData={props.nodeData} activeTool={props.activeTool} />
+      <Arcs nodeData={props.nodeData} activeTool={props.activeTool} />
     </>
   };
 
 
+  const RadiusPickerWrapper = (props: { nodeIndex: number | undefined, nodeData: NodeData }) => {
+    if (props.nodeIndex === undefined) {
+      return <></>;
+    } else {
+      return <RadiusPicker
+        x={props.nodeData.points[props.nodeIndex * 2]}
+        y={props.nodeData.points[props.nodeIndex * 2 + 1]}
+        maxRadius={100}
+        onSetRadius={radius => {
+          setRadius(props.nodeIndex!, radius);
+          setSettingNodeRadIndex(undefined);
+        }} />
+    }
+  }
+
   return (
     <Stage width={window.innerWidth} height={window.innerHeight} onClick={onClickStage}>
       <Layer>
-        <RadiusPickerWrapper nodeIndex={settingNodeRadIndex} />
+        <RadiusPickerWrapper nodeIndex={settingNodeRadIndex} nodeData={nodeData} />
         <Profile2D nodeData={nodeData} activeTool={props.activeTool} />
       </Layer>
     </Stage>
