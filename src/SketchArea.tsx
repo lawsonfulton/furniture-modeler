@@ -3,56 +3,16 @@ import { Stage, Layer, Rect, Text, Circle, Line, Group } from "react-konva";
 import Konva from "konva";
 import { Points } from "@react-three/drei";
 import { Tool } from "./App";
+import RadiusPicker from "./RadiusPicker";
+import Solver from "./Solver";
+import { Constraint, FixedPoint, LineSegment, LinesIncident, Point } from "./Constraints";
+
 
 
 class NodeData {
   points: number[] = [];
   cornerRadii: number[] = [];
 }
-
-interface RadiusSetterToolProps {
-  x: number;
-  y: number;
-  maxRadius: number;
-  onSetRadius: (radius: number) => void;
-}
-
-const RadiusSetterTool = (props: RadiusSetterToolProps) => {
-  const [radius, setRadius] = useState(0);
-
-  const onMouseMove = e => {
-    const stage = e.target.getStage();
-    const mousePos = stage!.getPointerPosition();
-    const mx = mousePos!.x;
-    const my = mousePos!.y;
-    const dist = Math.sqrt((mx - props.x) ** 2 + (my - props.y) ** 2);
-    if (dist < props.maxRadius) {
-      setRadius(dist);
-    }
-  };
-
-  return (<>
-    <Circle
-      x={props.x}
-      y={props.y}
-      strokeEnabled={true}
-      stroke="black"
-      dash={[5, 5]}
-      radius={radius}
-      draggable={true} />
-
-    {/* Invisible larger circle to capture move events */}
-    <Circle
-      x={props.x}
-      y={props.y}
-      radius={props.maxRadius * 2}
-      onMouseMove={onMouseMove}
-      onMouseDown={e => props.onSetRadius(radius)}
-    />
-  </>
-  );
-};
-
 
 interface SketchAreaProps {
   activeTool: Tool;
@@ -61,6 +21,43 @@ interface SketchAreaProps {
 export default function SketchArea(props: SketchAreaProps) {
   const [nodeData, setNodeData] = useState<NodeData>(new NodeData());
 
+  {
+    let vars = [1, 2, 3, 4, 5, 6, 7, 8]
+
+    let points: Point[] = [];
+    for (let i = 0; i < vars.length - 1; i += 2) {
+      points.push(new Point(i, i + 1));
+    }
+    console.log(points)
+    const lines = [
+      new LineSegment(points[0], points[1]),
+      new LineSegment(points[2], points[3]),
+    ]
+
+    const constraints: Constraint[] = [
+      new FixedPoint(points[0], 0, 0),
+      new FixedPoint(points[3], 10, 10),
+      new LinesIncident(lines[0], lines[1])
+    ];
+    console.log("constraints[0] value =", constraints[0].value(vars));
+    const grad0 = Array(vars.length).fill(0);
+    constraints[0].gradient(vars, grad0);
+    console.log("constraints[0] grad =", grad0);
+
+    console.log("constraints[1] value =", constraints[1].value(vars));
+    const grad1 = Array(vars.length).fill(0);
+    constraints[1].gradient(vars, grad1);
+    console.log("constraints[1] grad =", grad1);
+
+    console.log("constraints[2] value =", constraints[2].value(vars));
+    const grad2 = Array(vars.length).fill(0);
+    constraints[2].gradient(vars, grad2);
+    console.log("constraints[2] grad =", grad2);
+
+    const solver = new Solver(vars.length, constraints);
+    const sol = solver.solve(vars);
+    console.log("sol", sol);
+  }
   // Index of node whose radius is being set
   const [settingNodeRadIndex, setSettingNodeRadIndex] = useState<number | undefined>(undefined);
 
@@ -172,13 +169,11 @@ export default function SketchArea(props: SketchAreaProps) {
     </>;
   }
 
-  const RadiusSetter = (props: { nodeIndex: number | undefined }) => {
-    console.log(props.nodeIndex);
-
+  const RadiusPickerWrapper = (props: { nodeIndex: number | undefined }) => {
     if (props.nodeIndex === undefined) {
       return <></>;
     } else {
-      return <RadiusSetterTool
+      return <RadiusPicker
         x={nodeData.points[props.nodeIndex * 2]}
         y={nodeData.points[props.nodeIndex * 2 + 1]}
         maxRadius={100}
@@ -203,7 +198,7 @@ export default function SketchArea(props: SketchAreaProps) {
   return (
     <Stage width={window.innerWidth} height={window.innerHeight} onClick={onClickStage}>
       <Layer>
-        <RadiusSetter nodeIndex={settingNodeRadIndex} />
+        <RadiusPickerWrapper nodeIndex={settingNodeRadIndex} />
         <Profile2D nodeData={nodeData} activeTool={props.activeTool} />
       </Layer>
     </Stage>
