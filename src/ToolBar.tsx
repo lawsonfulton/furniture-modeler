@@ -1,29 +1,38 @@
 import Icon from "@ant-design/icons";
 import { Button, Col, Row } from "antd";
 import React, { ReactElement, useRef, useState } from "react";
-import SVG from "react-inlinesvg";
-import { ReactComponent as LineSVG } from "./line-tool.svg";
+import { Tool } from "./App";
+import { ReactComponent as PolySVG } from "./img/polygon.svg";
+import { ReactComponent as RadiusSVG } from "./img/radius-tool.svg";
 
-export default function ToolBar() {
-  // const [points, setPoints] = useState<number[]>([]);
 
-  const activateLineTool = () => {
+const polyTool = <Icon component={PolySVG} style={{ fill: "blue" }} />;
+const radiusTool = <Icon component={RadiusSVG} style={{ fill: "blue" }} />;
 
-  };
+interface ToolBarProps {
+  activeTool: Tool;
+  setTool: (tool: Tool) => void;
+}
 
-  const lineTool = <Icon component={LineSVG} style={{ fill: "blue" }} />;
-  // <div style={{ height: "70px", paddingLeft: "10px", backgroundColor: "whitesmoke" }}>
-  //   {/* <button ><img src="./images/line-tool.png" className="tool-button" alt="Line Tool" onClick={activateLineTool} /></button> */}
-  //   {/* < img src="./images/line-tool.png" className="tool-button" alt="Line Tool" onClick={activateLineTool} /> */}
-  //   <Button type="primary" icon={lineTool} size={"middle"} />
-  // </div >
-
+export default function ToolBar(props: ToolBarProps) {
   return (
-    <Row align="middle" style={{ height: "40px", paddingLeft: "10px", backgroundColor: "lightgrey" }}>
+    <Row gutter={8} align="middle" style={{ height: "40px", paddingLeft: "10px", backgroundColor: "lightgrey" }}>
       <Col>
-        <Button type="default" icon={lineTool} size={"middle"} style={{ verticalAlign: "middle" }} />
+        <Button
+          icon={polyTool}
+          type={props.activeTool === Tool.Polygon ? "primary" : "default"}
+          size={"middle"}
+          style={{ verticalAlign: "middle" }}
+          onClick={e => props.setTool(Tool.Polygon)} />
+      </Col>
+      <Col>
+        <Button
+          icon={radiusTool}
+          type={props.activeTool === Tool.Radius ? "primary" : "default"}
+          size={"middle"}
+          style={{ verticalAlign: "middle" }}
+          onClick={e => props.setTool(Tool.Radius)} />
       </Col>
     </Row >
-    // <Button type="primary">Primary Button</Button>
   );
 }

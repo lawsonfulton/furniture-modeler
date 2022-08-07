@@ -6,68 +6,34 @@ import SketchArea from "./SketchArea";
 import ToolBar from "./ToolBar";
 import 'antd/dist/antd.css';
 
+export enum Tool {
+  None = 1,
+  Polygon = 2,
+  Radius = 3
+}
+
 export class AppState {
-  points: number[] = [];
-  linePoints: number[] = [];
-  isDrawing: boolean = false;
+  // points: number[] = [];
+  // linePoints: number[] = [];
+  // isDrawing: boolean = false;
 }
 export interface StateCallbacks {
-  addPoint: (x: number, y: number) => void;
-  setPoint: (i: number, x: number, y: number) => void;
-  setLinePoint: (i: number, x: number, y: number) => void;
+  // addPoint: (x: number, y: number) => void;
+  // setPoint: (i: number, x: number, y: number) => void;
+  // setLinePoint: (i: number, x: number, y: number) => void;
 }
 
 const App = () => {
   const [state, setState] = useState<AppState>(new AppState());
-
-  const stateCallbacks: StateCallbacks = {
-    addPoint: (x: number, y: number) => {
-      setState({ ...state, points: [...state.points, x, y], linePoints: [...state.linePoints, x, y] })
-      // setState((prevState) => {
-      //   const newPoints = [...prevState.points, x, y];
-      //   return { ...prevState, points: newPoints };
-      // })
-    },
-
-    setLinePoint: (i: number, x: number, y: number) => {
-      const newPoints = [...state.linePoints];
-      newPoints[i] = x;
-      newPoints[i + 1] = y;
-      setState({ ...state, linePoints: newPoints });
-
-
-      // setState((prevState) => {
-      //   const newPoints = [...prevState.points];
-      //   newPoints[i] = x;
-      //   newPoints[i + 1] = y;
-      //   return { ...prevState, points: newPoints };
-      // })
-    },
-
-    setPoint: (i: number, x: number, y: number) => {
-      const newPoints = [...state.points];
-      newPoints[i] = x;
-      newPoints[i + 1] = y;
-      setState({ ...state, points: newPoints });
-
-
-      // setState((prevState) => {
-      //   const newPoints = [...prevState.points];
-      //   newPoints[i] = x;
-      //   newPoints[i + 1] = y;
-      //   return { ...prevState, points: newPoints };
-      // })
-    }
-  }
-
+  const [activeTool, setTool] = useState<Tool>(Tool.None);
 
 
   return (
     <div>
-      <ToolBar />
+      <ToolBar activeTool={activeTool} setTool={setTool} />
       <div style={{ display: "flex" }}>
         <div style={{ width: "50vw", height: "100vh", display: "inline-block" }}>
-          <SketchArea appState={state} callbacks={stateCallbacks} />
+          <SketchArea activeTool={activeTool} />
         </div>
         <div style={{ width: "50vw", height: "100vh", display: "inline-block" }}>
           <Viewer3D />
