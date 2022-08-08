@@ -6,6 +6,9 @@ import { Tool } from "./App";
 import RadiusPicker from "./RadiusPicker";
 import Solver from "./ConstraintSolver";
 import { Vector2 } from "three";
+import { Geometry } from "./GeometryElements";
+import { GeometrySystem } from "./GeometrySystem";
+import { Constraint } from "./Constraints";
 // import { Constraint, FixedPoint, LineSegment, LinesIncident, Point } from "./Constraints";
 
 
@@ -14,93 +17,102 @@ class NodeData {
   cornerRadii: number[] = [];
 }
 
+class SketchState {
+  lineSegments: Geometry.LineSegment[] = [];
+  arcs: Geometry.Arc[] = [];
+  constraints: Constraint[] = [];
+
+  // Every element must be registed with the geometry system
+  geometrySystem: GeometrySystem = new GeometrySystem();
+}
+
 interface SketchAreaProps {
   activeTool: Tool;
 }
 
 export default function SketchArea(props: SketchAreaProps) {
-  const [nodeData, setNodeData] = useState<NodeData>(new NodeData());
+  // const [nodeData, setNodeData] = useState<NodeData>(new NodeData());
+  const [sketchState, setSketchState] = useState<SketchState>(new SketchState());
+  const [prevPathPoint, setPrevPathPoint] = useState<Vector2 | undefined>(undefined);
 
-  {
-    let vars = [1, 2, 3, 4, 5, 6, 7, 8]
-
-    let points: Point[] = [];
-    for (let i = 0; i < vars.length - 1; i += 2) {
-      points.push(new Point(i, i + 1));
-    }
-    console.log(points)
-    const lines = [
-      new LineSegment(points[0], points[1]),
-      new LineSegment(points[2], points[3]),
-    ]
-
-    const constraints: Constraint[] = [
-      new FixedPoint(points[0], 0, 0),
-      new FixedPoint(points[3], 10, 10),
-      new LinesIncident(lines[0], lines[1])
-    ];
-    console.log("constraints[0] value =", constraints[0].value(vars));
-    const grad0 = Array(vars.length).fill(0);
-    constraints[0].gradient(vars, grad0);
-    console.log("constraints[0] grad =", grad0);
-
-    console.log("constraints[1] value =", constraints[1].value(vars));
-    const grad1 = Array(vars.length).fill(0);
-    constraints[1].gradient(vars, grad1);
-    console.log("constraints[1] grad =", grad1);
-
-    console.log("constraints[2] value =", constraints[2].value(vars));
-    const grad2 = Array(vars.length).fill(0);
-    constraints[2].gradient(vars, grad2);
-    console.log("constraints[2] grad =", grad2);
-
-    const solver = new Solver(vars.length, constraints);
-    const sol = solver.solve(vars);
-    console.log("sol", sol);
-  }
   // Index of node whose radius is being set
   const [settingNodeRadIndex, setSettingNodeRadIndex] = useState<number | undefined>(undefined);
 
   // Mutate State Functions
-  const addPoint = (x: number, y: number) => {
-    console.log("addPoint(", x, ", ", y, ")");
-    setNodeData(nodeData => {
-      return {
-        ...nodeData,
-        points: [...nodeData.points, x, y],
-        cornerRadii: [...nodeData.cornerRadii, 0],
-      };
-    });
+  // const createLineSegment = (p1: Vector2, p2: Vector2) => {
+  //   setGeometry((geometry): GeometrySystem => {
+  //     let newGeometry = geometry.shallowCopy();
+  //     newGeometry.addLineSegment(p1, p2);
+  //     return newGeometry;
+  //   });
+  // }
+
+  // const addPoint = (x: number, y: number) => {
+  //   console.log("addPoint(", x, ", ", y, ")");
+  //   setNodeData(nodeData => {
+  //     return {
+  //       ...nodeData,
+  //       points: [...nodeData.points, x, y],
+  //       cornerRadii: [...nodeData.cornerRadii, 0],
+  //     };
+  //   });
+  // }
+
+  // const setPoint = (nodeIndex: number, x: number, y: number) => {
+  //   setNodeData(nodeData => {
+  //     const newPoints = [...nodeData.points];
+  //     newPoints[nodeIndex * 2] = x;
+  //     newPoints[nodeIndex * 2 + 1] = y;
+  //     return {
+  //       ...nodeData,
+  //       points: newPoints,
+  //     };
+  //   });
+  // };
+
+  // const setRadius = (nodeIndex: number, radius: number) => {
+  //   setNodeData(nodeData => {
+  //     const newRadii = [...nodeData.cornerRadii];
+  //     newRadii[nodeIndex] = radius;
+  //     return {
+  //       ...nodeData,
+  //       cornerRadii: newRadii,
+  //     };
+  //   });
+  // };
+
+  // const setPointDirect = (i: number, x: number, y: number) => {
+  //   nodeData.points[i * 2] = x;
+  //   nodeData.points[i * 2 + 1] = y;
+  // };
+
+  // const addLineSegment = (lineSeg: Geometry.LineSegment) => {
+  //   let geoSystem = sketchState.geometrySystem.shallowCopy();
+  //   geoSystem.addElement(lineSeg);
+  //   setSketchState(sketchState => {
+  //     return { ...sketchState, lineSegments: [...sketchState.lineSegments, lineSeg] }
+  //   });
+  // }
+
+  const addPointToPath = (x: number, y: number) => {
+    if (prevPathPoint) {
+      // Need to make a shallow copy for react
+      let geoSystem = sketchState.geometrySystem.shallowCopy();
+
+      // Create / register our line segment
+      const lineSeg = geoSystem.addLineSegment(prevPathPoint.x, prevPathPoint.y, x, y);
+
+      setSketchState(sketchState => {
+        return {
+          ...sketchState,
+          lineSegments: [...sketchState.lineSegments, lineSeg],
+          geometrySystem: geoSystem
+        };
+      });
+    }
+
+    setPrevPathPoint(new Vector2(x, y));
   }
-
-  const setPoint = (nodeIndex: number, x: number, y: number) => {
-    setNodeData(nodeData => {
-      const newPoints = [...nodeData.points];
-      newPoints[nodeIndex * 2] = x;
-      newPoints[nodeIndex * 2 + 1] = y;
-      return {
-        ...nodeData,
-        points: newPoints,
-      };
-    });
-  };
-
-  const setRadius = (nodeIndex: number, radius: number) => {
-    setNodeData(nodeData => {
-      const newRadii = [...nodeData.cornerRadii];
-      newRadii[nodeIndex] = radius;
-      return {
-        ...nodeData,
-        cornerRadii: newRadii,
-      };
-    });
-  };
-
-  const setPointDirect = (i: number, x: number, y: number) => {
-    nodeData.points[i * 2] = x;
-    nodeData.points[i * 2 + 1] = y;
-  };
-
 
   // Event Handlers
   const onClickStage = (e) => {
@@ -108,124 +120,216 @@ export default function SketchArea(props: SketchAreaProps) {
     const mousePos = stage.getPointerPosition();
 
     if (props.activeTool === Tool.Polygon) {
-      addPoint(mousePos.x, mousePos.y);
+      addPointToPath(mousePos.x, mousePos.y);
     }
   };
 
-  const onDragNode = (e, i) => {
+  const onDragNode = (e, lineIndex: number, linePoint: number) => {
     // Update points array directly while dragging
     // Calling setState forces a redraw which interrupts the
-    // dragging event handler. Not sure what the best way to
-    // get around this is.
-    setPointDirect(i, e.target.x(), e.target.y());
+    // dragging event handler. So skipping this for the time being.
+    
+    // setSketchState(sketchState => {
+    //   const state = sketchState.geometrySystem.state;
+    //   const newSketchState = { ...sketchState };
+    //   newSketchState.lineSegments[lineIndex].set(state, linePoint, e.target.x(), e.target.y());
+    //   return newSketchState;
+    // });
   };
-
-  const onDragNodeEnd = (e, i) => {
+  
+  const updateLineSegments = (e, lineIndex1: number, linePoint1: number, lineIndex2: number | undefined, linePoint2: number | undefined) => {
     // When done dragging trigger the state update.
-    setPoint(i, e.target.x(), e.target.y());
+    setSketchState(sketchState => {
+      const state = sketchState.geometrySystem.state;
+      const newSketchState = { ...sketchState };
+      newSketchState.lineSegments[lineIndex1].set(state, linePoint1, e.target.x(), e.target.y());
+      if(lineIndex2 !== undefined && linePoint2 !== undefined && lineIndex2 >= 0) {
+        newSketchState.lineSegments[lineIndex2].set(state, linePoint2, e.target.x(), e.target.y());
+      }
+      return newSketchState;
+    });
   };
 
-  const onMouseOverNode = e => {
+  const magnifyNode = e => {
     document.body.style.cursor = 'pointer';
     e.target.scaleX(1.2);
     e.target.scaleY(1.2);
   };
 
-  const onMouseOutNode = e => {
+  const resetNode = e => {
     document.body.style.cursor = 'default';
     e.target.scaleX(1.0);
     e.target.scaleY(1.0);
   };
 
-  const onClickNode = (e, i) => {
-    if (props.activeTool === Tool.Radius) {
-      console.log("Choosing radius for node ", i);
-      setSettingNodeRadIndex(i);
+  const addArc = (e, line1: number, point1:number, line2: number | undefined, point2: number | undefined) => {
+    if (props.activeTool === Tool.Radius && sketchState.lineSegments.length > 0 && line1 > 0) {
+      // console.log("Choosing radius for node ", i);
+      // setSettingNodeRadIndex(i);
+
+      // Need to make a shallow copy for react
+      let geoSystem = sketchState.geometrySystem.shallowCopy();
+      const state = geoSystem.state;
+      
+      const radius = 50;
+      const x = sketchState.lineSegments[line1].x(state, point1);
+      const y = sketchState.lineSegments[line1].y(state, point1);
+      const startAngle = 90 * Math.PI / 180;
+      const endAngle = 135 * Math.PI / 180;
+      const arc = geoSystem.addArc(x, y, radius, startAngle, endAngle);
+
+      setSketchState(sketchState => {
+        return {
+          ...sketchState,
+          arcs: [...sketchState.arcs, arc],
+          geometrySystem: geoSystem
+        };
+      }); 
     }
   }
 
   // Render the nodes and lines
-  const Nodes = (props: { nodeData: NodeData, activeTool: Tool }) => {
+  const Nodes = (props: { lineSegments: Geometry.LineSegment[], activeTool: Tool, geoState: number[] }) => {
+    const fill = "#272727ff";
+    const radius = 5;
+
     let nodes: JSX.Element[] = [];
-    for (let i = 0; i < props.nodeData.cornerRadii.length; i += 1) {
-      nodes.push(
-        <Circle
-          key={"node-" + i.toString()}
-          id={i.toString()}
-          x={props.nodeData.points[i * 2]}
-          y={props.nodeData.points[i * 2 + 1]}
-          fill={"#272727ff"}
-          radius={5}
+    for (let i = 0; i < props.lineSegments.length; i += 1) {
+        const prevLine = i > 0 ? i - 1 : undefined;
+        nodes.push(
+          <Circle
+          key={"node-" + i.toString() + "-0"}
+          x={props.lineSegments[i].x1(props.geoState)}
+          y={props.lineSegments[i].y1(props.geoState)}
+          fill={fill}
+          radius={radius}
           draggable={props.activeTool === Tool.Polygon}
-          onDragMove={e => onDragNode(e, i)}
-          onDragEnd={e => onDragNodeEnd(e, i)}
-          onMouseOver={e => onMouseOverNode(e)}
-          onMouseOut={e => onMouseOutNode(e)}
-          onClick={e => onClickNode(e, i)}
-        />)
+          onDragEnd={e => updateLineSegments(e, i, 0, prevLine, 1)}
+          onMouseOver={e => magnifyNode(e)}
+          onMouseOut={e => resetNode(e)}
+          onClick={e => addArc(e, i, 0, prevLine, 1)}
+          // onDragMove={e => onDragNode(e, lineIndex, linePoint)}
+        />);
+
+        if(i === props.lineSegments.length - 1) { // Add the last node
+          nodes.push(
+            <Circle
+            key={"node-" + i.toString() + "-1"}
+            x={props.lineSegments[i].x2(props.geoState)}
+            y={props.lineSegments[i].y2(props.geoState)}
+            fill={fill}
+            radius={radius}
+            draggable={props.activeTool === Tool.Polygon}
+            onDragEnd={e => updateLineSegments(e, i, 1, undefined, undefined)}
+            onMouseOver={e => magnifyNode(e)}
+            onMouseOut={e => resetNode(e)}
+            // onClick={e => onClickNode(e, lineIndex)}
+            // onDragMove={e => onDragNode(e, lineIndex, linePoint)}
+          />);
+        }
     }
 
+    // If no line segments yet
+    if (nodes.length === 0 && prevPathPoint) {
+      const i = 0;
+      const linePoint = 0;
+      nodes.push(
+        <Circle
+        key={"node-" + i.toString() + "-" + linePoint.toString()}
+        x={prevPathPoint.x}
+        y={prevPathPoint.y}
+        fill={fill}
+        radius={radius}
+        draggable={props.activeTool === Tool.Polygon}
+        onDragEnd={e => setPrevPathPoint(new Vector2(e.target.x(), e.target.y()))}
+        onMouseOver={e => magnifyNode(e)}
+        onMouseOut={e => resetNode(e)}
+        // onClick={e => onClickNode(e, lineIndex)}
+        // onDragMove={e => onDragNode(e, lineIndex, linePoint)}
+      />);
+    }
+    
     return <>
       {nodes}
     </>;
   }
 
+  const LineSegments = (props: { lineSegments: Geometry.LineSegment[], geoState: number[] }) => {
+    let lines: JSX.Element[] = [];
+    for (let i = 0; i < props.lineSegments.length; i += 1) {
+      const points: number[] = [
+        props.lineSegments[i].x1(props.geoState), props.lineSegments[i].y1(props.geoState),
+        props.lineSegments[i].x2(props.geoState), props.lineSegments[i].y2(props.geoState),
+      ]
+
+      lines.push(
+        <Line
+          key={"line-" + i.toString()}
+          points={points}
+          stroke={"#1c1c1cff"} />
+      )
+    }
+    return <>{lines}</>;
+  }
+
   // Render the nodes and lines
-  const Arcs = (props: { nodeData: NodeData, activeTool: Tool }) => {
-    let arcs: JSX.Element[] = [];
-    for (let i = 0; i < props.nodeData.cornerRadii.length; i += 1) {
-      if (props.nodeData.cornerRadii[i] > 0) {
-        arcs.push(
+  const Arcs = (props: { arcs: Geometry.Arc[], activeTool: Tool }) => {
+    const state = sketchState.geometrySystem.state;
+
+    let arcsOut: JSX.Element[] = [];
+    for (let i = 0; i < props.arcs.length; i += 1) {
+        arcsOut.push(
           <Arc
             key={"arc-" + i.toString()}
-            x={props.nodeData.points[i * 2]}
-            y={props.nodeData.points[i * 2 + 1]}
-            angle={45}
-            innerRadius={props.nodeData.cornerRadii[i]}
-            outerRadius={props.nodeData.cornerRadii[i]}
+            x={props.arcs[i].x(state)}
+            y={props.arcs[i].y(state)}
+            angle={(props.arcs[i].endAngle(state) - props.arcs[i].startAngle(state)) * 180 / Math.PI}
+            rotation={props.arcs[i].startAngle(state) * 180 / Math.PI}
+            innerRadius={props.arcs[i].radius(state)}
+            outerRadius={props.arcs[i].radius(state)}
             strokeEnabled={true}
             stroke="black" />
         )
-      }
     }
 
     return <>
-      {arcs}
+      {arcsOut}
     </>;
   }
 
-  const Profile2D = (props: { nodeData: NodeData, activeTool: Tool }) => {
+  const Profile2D = (props: { lineSegments: Geometry.LineSegment[], arcs: Geometry.Arc[], activeTool: Tool }) => {
     return <>
-      <Line
-        points={props.nodeData.points}
-        stroke={"#1c1c1cff"}
-      />
-      <Nodes nodeData={props.nodeData} activeTool={props.activeTool} />
-      <Arcs nodeData={props.nodeData} activeTool={props.activeTool} />
+      <LineSegments lineSegments={props.lineSegments} geoState={sketchState.geometrySystem.state} />
+      <Nodes lineSegments={props.lineSegments} activeTool={props.activeTool} geoState={sketchState.geometrySystem.state} />
+      <Arcs arcs={props.arcs} activeTool={props.activeTool} /> 
     </>
   };
 
 
-  const RadiusPickerWrapper = (props: { nodeIndex: number | undefined, nodeData: NodeData }) => {
-    if (props.nodeIndex === undefined) {
-      return <></>;
-    } else {
-      return <RadiusPicker
-        x={props.nodeData.points[props.nodeIndex * 2]}
-        y={props.nodeData.points[props.nodeIndex * 2 + 1]}
-        maxRadius={100}
-        onSetRadius={radius => {
-          setRadius(props.nodeIndex!, radius);
-          setSettingNodeRadIndex(undefined);
-        }} />
-    }
-  }
+  // const RadiusPickerWrapper = (props: { nodeIndex: number | undefined, nodeData: NodeData }) => {
+  //   if (props.nodeIndex === undefined) {
+  //     return <></>;
+  //   } else {
+  //     return <RadiusPicker
+  //       x={props.nodeData.points[props.nodeIndex * 2]}
+  //       y={props.nodeData.points[props.nodeIndex * 2 + 1]}
+  //       maxRadius={100}
+  //       onSetRadius={radius => {
+  //         setRadius(props.nodeIndex!, radius);
+  //         setSettingNodeRadIndex(undefined);
+  //       }} />
+  //   }
+  // }
 
   return (
-    <Stage width={window.innerWidth} height={window.innerHeight} onClick={onClickStage}>
+    // TODO: Idea, add stage to next level up. Might be the reason why dragging gets interrupted
+    // on draw
+    <Stage width={window.innerWidth} height={window.innerHeight}>
       <Layer>
-        <RadiusPickerWrapper nodeIndex={settingNodeRadIndex} nodeData={nodeData} />
-        <Profile2D nodeData={nodeData} activeTool={props.activeTool} />
+        {/* Background */}
+        <Rect x={0} y={0} width={window.innerWidth} height={window.innerHeight} fill={"#f0f0f0ff"} onClick={onClickStage} />
+        {/* <RadiusPickerWrapper nodeIndex={settingNodeRadIndex} lineSegments={sketchState.lineSegments} /> */}
+        <Profile2D lineSegments={sketchState.lineSegments} arcs={sketchState.arcs} activeTool={props.activeTool} />
       </Layer>
     </Stage>
   );
