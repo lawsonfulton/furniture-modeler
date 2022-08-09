@@ -8,7 +8,7 @@ import Solver from "./ConstraintSolver";
 import { Vector2 } from "three";
 import { Geometry } from "./GeometryElements";
 import { GeometrySystem } from "./GeometrySystem";
-import { Constraint } from "./Constraints";
+import { Constraint, FixedArcRadius, LineArcIncident, LineArcTangent } from "./Constraints";
 // import { Constraint, FixedPoint, LineSegment, LinesIncident, Point } from "./Constraints";
 
 
@@ -33,7 +33,7 @@ interface SketchAreaProps {
 export default function SketchArea(props: SketchAreaProps) {
   // const [nodeData, setNodeData] = useState<NodeData>(new NodeData());
   const [sketchState, setSketchState] = useState<SketchState>(new SketchState());
-  const [prevPathPoint, setPrevPathPoint] = useState<Vector2 | undefined>(undefined);
+  const [initialPathPoint, setInitialPathPoint] = useState<Vector2 | undefined>(undefined);
 
   // Index of node whose radius is being set
   const [settingNodeRadIndex, setSettingNodeRadIndex] = useState<number | undefined>(undefined);
@@ -95,12 +95,23 @@ export default function SketchArea(props: SketchAreaProps) {
   // }
 
   const addPointToPath = (x: number, y: number) => {
-    if (prevPathPoint) {
+    if (initialPathPoint) {
+      let startingX: number;
+      let startingY: number;
+      if (sketchState.lineSegments.length > 0) {
+        const state = sketchState.geometrySystem.state;
+        startingX = sketchState.lineSegments[sketchState.lineSegments.length - 1].x2(state);
+        startingY = sketchState.lineSegments[sketchState.lineSegments.length - 1].y2(state);
+      } else {
+        startingX = initialPathPoint.x;
+        startingY = initialPathPoint.y;
+      }
+
       // Need to make a shallow copy for react
       let geoSystem = sketchState.geometrySystem.shallowCopy();
 
       // Create / register our line segment
-      const lineSeg = geoSystem.addLineSegment(prevPathPoint.x, prevPathPoint.y, x, y);
+      const lineSeg = geoSystem.addLineSegment(startingX, startingY, x, y);
 
       setSketchState(sketchState => {
         return {
@@ -111,7 +122,7 @@ export default function SketchArea(props: SketchAreaProps) {
       });
     }
 
-    setPrevPathPoint(new Vector2(x, y));
+    setInitialPathPoint(new Vector2(x, y));
   }
 
   // Event Handlers
@@ -137,12 +148,12 @@ export default function SketchArea(props: SketchAreaProps) {
     // });
   };
   
-  const updateLineSegments = (e, lineIndex1: number, linePoint1: number, lineIndex2: number | undefined, linePoint2: number | undefined) => {
+  const updateLineSegments = (e, lineIndex1: number, LineEndPoint: Geometry.LineEndPoint, lineIndex2: number | undefined, linePoint2: number | undefined) => {
     // When done dragging trigger the state update.
     setSketchState(sketchState => {
       const state = sketchState.geometrySystem.state;
       const newSketchState = { ...sketchState };
-      newSketchState.lineSegments[lineIndex1].set(state, linePoint1, e.target.x(), e.target.y());
+      newSketchState.lineSegments[lineIndex1].set(state, LineEndPoint, e.target.x(), e.target.y());
       if(lineIndex2 !== undefined && linePoint2 !== undefined && lineIndex2 >= 0) {
         newSketchState.lineSegments[lineIndex2].set(state, linePoint2, e.target.x(), e.target.y());
       }
@@ -162,7 +173,7 @@ export default function SketchArea(props: SketchAreaProps) {
     e.target.scaleY(1.0);
   };
 
-  const addArc = (e, line1: number, point1:number, line2: number | undefined, point2: number | undefined) => {
+  const addArc = (e, line1: number, point1: Geometry.LineEndPoint, line2: number | undefined, point2: Geometry.LineEndPoint | undefined) => {
     if (props.activeTool === Tool.Radius && sketchState.lineSegments.length > 0 && line1 > 0) {
       // console.log("Choosing radius for node ", i);
       // setSettingNodeRadIndex(i);
@@ -171,12 +182,24 @@ export default function SketchArea(props: SketchAreaProps) {
       let geoSystem = sketchState.geometrySystem.shallowCopy();
       const state = geoSystem.state;
       
-      const radius = 50;
-      const x = sketchState.lineSegments[line1].x(state, point1);
-      const y = sketchState.lineSegments[line1].y(state, point1);
-      const startAngle = 90 * Math.PI / 180;
-      const endAngle = 135 * Math.PI / 180;
+      const seg = sketchState.lineSegments[line1];
+
+      const radius = 20;
+      const x = seg.x(state, point1);
+      const y = seg.y(state, point1);
+      // const startAngle = 220 * Math.PI / 180;
+      // const endAngle = 270 * Math.PI / 180;
+      // const startAngle = 0;// 220 * Math.PI / 180;
+      // const endAngle = 360 * Math.PI / 180;// 270 * Math.PI / 180;
+      const startAngle = (180 + 45) * Math.PI / 180;
+      const endAngle = (360 - 45) * Math.PI / 180;// 270 * Math.PI / 180;
       const arc = geoSystem.addArc(x, y, radius, startAngle, endAngle);
+
+      // geoSystem.addConstraint(new LineArcTangent(seg, arc));
+      // geoSystem.addConstraint(new FixedArcRadius(arc, radius));
+      geoSystem.addConstraint(new LineArcIncident(seg, Geometry.LineEndPoint.P2, arc));
+
+      geoSystem.solve();
 
       setSketchState(sketchState => {
         return {
@@ -204,7 +227,7 @@ export default function SketchArea(props: SketchAreaProps) {
           fill={fill}
           radius={radius}
           draggable={props.activeTool === Tool.Polygon}
-          onDragEnd={e => updateLineSegments(e, i, 0, prevLine, 1)}
+            onDragEnd={e => updateLineSegments(e, i, Geometry.LineEndPoint.P1, prevLine, Geometry.LineEndPoint.P2)}
           onMouseOver={e => magnifyNode(e)}
           onMouseOut={e => resetNode(e)}
           onClick={e => addArc(e, i, 0, prevLine, 1)}
@@ -220,7 +243,7 @@ export default function SketchArea(props: SketchAreaProps) {
             fill={fill}
             radius={radius}
             draggable={props.activeTool === Tool.Polygon}
-            onDragEnd={e => updateLineSegments(e, i, 1, undefined, undefined)}
+              onDragEnd={e => updateLineSegments(e, i, Geometry.LineEndPoint.P2, undefined, undefined)}
             onMouseOver={e => magnifyNode(e)}
             onMouseOut={e => resetNode(e)}
             // onClick={e => onClickNode(e, lineIndex)}
@@ -230,18 +253,18 @@ export default function SketchArea(props: SketchAreaProps) {
     }
 
     // If no line segments yet
-    if (nodes.length === 0 && prevPathPoint) {
+    if (nodes.length === 0 && initialPathPoint) {
       const i = 0;
       const linePoint = 0;
       nodes.push(
         <Circle
         key={"node-" + i.toString() + "-" + linePoint.toString()}
-        x={prevPathPoint.x}
-        y={prevPathPoint.y}
+          x={initialPathPoint.x}
+          y={initialPathPoint.y}
         fill={fill}
         radius={radius}
         draggable={props.activeTool === Tool.Polygon}
-        onDragEnd={e => setPrevPathPoint(new Vector2(e.target.x(), e.target.y()))}
+          onDragEnd={e => setInitialPathPoint(new Vector2(e.target.x(), e.target.y()))}
         onMouseOver={e => magnifyNode(e)}
         onMouseOut={e => resetNode(e)}
         // onClick={e => onClickNode(e, lineIndex)}
@@ -278,13 +301,17 @@ export default function SketchArea(props: SketchAreaProps) {
 
     let arcsOut: JSX.Element[] = [];
     for (let i = 0; i < props.arcs.length; i += 1) {
+      const sa = props.arcs[i].startAngle(state) % (2 * Math.PI);
+      const ea = props.arcs[i].endAngle(state) % (2 * Math.PI);
+      const angle = (props.arcs[i].endAngle(state) - props.arcs[i].startAngle(state)) * 180 / Math.PI;
+      const rotation = props.arcs[i].startAngle(state) * 180 / Math.PI;
         arcsOut.push(
           <Arc
             key={"arc-" + i.toString()}
             x={props.arcs[i].x(state)}
             y={props.arcs[i].y(state)}
-            angle={(props.arcs[i].endAngle(state) - props.arcs[i].startAngle(state)) * 180 / Math.PI}
-            rotation={props.arcs[i].startAngle(state) * 180 / Math.PI}
+            angle={angle}
+            rotation={rotation}
             innerRadius={props.arcs[i].radius(state)}
             outerRadius={props.arcs[i].radius(state)}
             strokeEnabled={true}

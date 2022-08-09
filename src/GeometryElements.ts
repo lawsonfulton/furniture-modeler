@@ -18,30 +18,29 @@ export namespace Geometry {
 
   // export class Point extends Element {
   //   constructor(public v: Vector2, offset: number) { super(offset) }
-
   //   dims(): number {
   //     return 2;
   //   }
-
   //   // assembleState(state: number[], offset: number): void {
   //   //   state[offset] = this.v.x;
   //   //   state[offset + 1] = this.v.y;
   //   // }
-
   //   // updateFromState(state: number[], offset: number): void {
   //   //   this.v.x = state[offset];
   //   //   this.v.y = state[offset + 1];
   //   // }
-
   //   x(state: number[]): number {
   //     return state[this.offset];
   //   }
-
   //   y(state: number[]): number {
   //     return state[this.offset + 1];
   //   }
   // }
 
+  export enum LineEndPoint {
+    P1 = 0,
+    P2 = 1,
+  }
   export class LineSegment extends Element {
     constructor(x1: number, y1: number, x2: number, y2: number, state: number[], offset: number) {
       super(offset);
@@ -84,20 +83,20 @@ export namespace Geometry {
       return this.offset + 3;
     }
 
-    x(state: number[], pointIndex: number): number {
-      if (pointIndex === 0) {
+    x(state: number[], lineEndPoint: LineEndPoint): number {
+      if (lineEndPoint === LineEndPoint.P1) {
         return this.x1(state);
-      } else if (pointIndex === 1) {
+      } else if (lineEndPoint === LineEndPoint.P2) {
         return this.x2(state);
       } else {
         throw "Point index must be 0 or 1";
       }
     }
 
-    y(state: number[], pointIndex: number): number {
-      if (pointIndex === 0) {
+    y(state: number[], lineEndPoint: LineEndPoint): number {
+      if (lineEndPoint === LineEndPoint.P1) {
         return this.y1(state);
-      } else if (pointIndex === 1) {
+      } else if (lineEndPoint === LineEndPoint.P2) {
         return this.y2(state);
       } else {
         throw "Point index must be 0 or 1";
@@ -114,10 +113,10 @@ export namespace Geometry {
       state[this.y2i()] = y2;
     }
 
-    set(state: number[], pointIndex: number, x: number, y: number) {
-      if (pointIndex === 0) {
+    set(state: number[], lineEndPoint: LineEndPoint, x: number, y: number) {
+      if (lineEndPoint === LineEndPoint.P1) {
         this.setP1(state, x, y);
-      } else if (pointIndex === 1) {
+      } else if (lineEndPoint === LineEndPoint.P2) {
         this.setP2(state, x, y);
       } else {
         throw "Point index must be 0 or 1";
