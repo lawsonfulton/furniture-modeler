@@ -37,6 +37,7 @@ export class LineArcTangent extends Constraint {
     // Good
     // const val = (r * cos(sa) * (p2x - p1x) + r * sin(sa) * (p2y - p1y)) ** 2;
 
+    // Hack to try and make the upside down arcs work..
     if (!(this.reverse)) {
       const val = (r * cos(sa) * (p2x - p1x) + r * sin(sa) * (p2y - p1y)) ** 2;
       return val;
@@ -95,8 +96,6 @@ export class LineArcTangent extends Constraint {
       gradOut[ri] += 1.0 * ((2 * (-p1x + p2x) * cos(ea) + 2 * (-p1y + p2y) * sin(ea)) * (r * (-p1x + p2x) * cos(ea) + r * (-p1y + p2y) * sin(ea)));
       gradOut[eai] += 1.0 * ((-2 * r * (-p1x + p2x) * sin(ea) + 2 * r * (-p1y + p2y) * cos(ea)) * (r * (-p1x + p2x) * cos(ea) + r * (-p1y + p2y) * sin(ea)));
     }
-
-
 
     //////////////// Vector aligned version (not quite right?)
     // const p1x = this.seg.x(state, this.lineEndPoint);
@@ -167,20 +166,8 @@ export class LineSegmentAligned extends Constraint {
     const pox = this.pox;
     const poy = this.poy;
 
-    // Point line distance
-    // const len2 = ((p2x - pox) ** 2 + (p2y - poy) ** 2);
-    // const len = ((p1x - pox) ** 2 + (p1y - poy) ** 2);
-    // if (len < 1e-6) {
-    //   return 0;
-    // }
-    // const val = (vx * (p1x - pox) / sqrt(((p1x - pox) ** 2 + (p1y - poy) ** 2)) + vy * (p1y - poy) / sqrt(((p1x - pox) ** 2 + (p1y - poy) ** 2)) - 1) ** 2 + (vx * (p2x - pox) / sqrt(((p2x - pox) ** 2 + (p2y - poy) ** 2)) + vy * (p2y - poy) / sqrt(((p2x - pox) ** 2 + (p2y - poy) ** 2)) - 1) ** 2;
     const val = ((vx * (p1x - pox) + vy * (p1y - poy)) ** 2 - ((p1x - pox) ** 2 + (p1y - poy) ** 2)) ** 2 + ((vx * (p2x - pox) + vy * (p2y - poy)) ** 2 - ((p2x - pox) ** 2 + (p2y - poy) ** 2)) ** 2;
     return val;
-
-    // Tangent
-    // Tangent
-    // const val = (((p2x - p1x) * vx + (p2y - p1y) * vy) ** 2 - (p2x - p1x) ** 2 - (p2y - p1y) ** 2) ** 2;
-    // return val; 
   }
 
   gradient(state: number[], gradOut: number[]): void {
@@ -197,19 +184,11 @@ export class LineSegmentAligned extends Constraint {
     const pox = this.pox;
     const poy = this.poy;
 
-    // Tangent
-    // gradOut[p1xi] += (-4 * p1x + 4 * p2x - 4 * vx * (vx * (-1.0 * p1x + p2x) + vy * (-p1y + p2y))) * (-1.0 * (-1.0 * p1x + p2x) ** 2 - (-p1y + p2y) ** 2 + (vx * (-1.0 * p1x + p2x) + vy * (-p1y + p2y)) ** 2);
-    // gradOut[p1yi] += (-4 * p1y + 4 * p2y - 4 * vy * (vx * (-1.0 * p1x + p2x) + vy * (-p1y + p2y))) * (-1.0 * (-1.0 * p1x + p2x) ** 2 - (-p1y + p2y) ** 2 + (vx * (-1.0 * p1x + p2x) + vy * (-p1y + p2y)) ** 2);
-    // gradOut[p2xi] += (4 * p1x - 4 * p2x + 4 * vx * (vx * (-1.0 * p1x + p2x) + vy * (-p1y + p2y))) * (-1.0 * (-1.0 * p1x + p2x) ** 2 - (-p1y + p2y) ** 2 + (vx * (-1.0 * p1x + p2x) + vy * (-p1y + p2y)) ** 2);
-    // gradOut[p2yi] += (4 * p1y - 4 * p2y + 4 * vy * (vx * (-1.0 * p1x + p2x) + vy * (-p1y + p2y))) * (-1.0 * (-1.0 * p1x + p2x) ** 2 - (-p1y + p2y) ** 2 + (vx * (-1.0 * p1x + p2x) + vy * (-p1y + p2y)) ** 2);
-
     // Point line distance
     gradOut[p1xi] += (-4 * p1x + 4 * pox + 4 * vx * (vx * (p1x - pox) + vy * (p1y - poy))) * (-1.0 * (p1x - pox) ** 2 - (p1y - poy) ** 2 + (vx * (p1x - pox) + vy * (p1y - poy)) ** 2);
     gradOut[p1yi] += (-4 * p1y + 4 * poy + 4 * vy * (vx * (p1x - pox) + vy * (p1y - poy))) * (-1.0 * (p1x - pox) ** 2 - (p1y - poy) ** 2 + (vx * (p1x - pox) + vy * (p1y - poy)) ** 2);
     gradOut[p2xi] += (-4 * p2x + 4 * pox + 4 * vx * (vx * (p2x - pox) + vy * (p2y - poy))) * (-1.0 * (p2x - pox) ** 2 - (p2y - poy) ** 2 + (vx * (p2x - pox) + vy * (p2y - poy)) ** 2);
     gradOut[p2yi] += (-4 * p2y + 4 * poy + 4 * vy * (vx * (p2x - pox) + vy * (p2y - poy))) * (-1.0 * (p2x - pox) ** 2 - (p2y - poy) ** 2 + (vx * (p2x - pox) + vy * (p2y - poy)) ** 2);
-
-
   }
 }
 

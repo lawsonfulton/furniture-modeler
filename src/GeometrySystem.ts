@@ -38,7 +38,6 @@ export class GeometrySystem {
     return c;
   }
 
-
   solve() {
     const solver = new ConstraintSolver(this.constraints);
     this.state = solver.solve(this.state);
@@ -48,35 +47,7 @@ export class GeometrySystem {
     return this.state.concat(Array(dims).fill(0));
   }
 
-  // private dims(): number {
-  //   return this.elements.reduce((acc, e) => acc + e.dims(), 0);
-  // }
-
   private addElement(e: Geometry.Element) {
     this.elements.push(e);
-    }
-
-  // private assembleState(state: number[]): void {
-  //   let offset = 0;
-  //   for (let e of this.elements) {
-  //     e.assembleState(state, offset);
-  //     offset += e.dims();
-  //   }
-
-  //   if (offset !== this.dims()) {
-  //     throw "State vector is not the correct size";
-  //   }
-  // }
-
-  // private updateFromState(state: number[]): void {
-  //   let offset = 0;
-  //   for (let e of this.elements) {
-  //     e.updateFromState(state, offset);
-  //     offset += e.dims();
-  //   }
-
-  //   if (offset !== this.dims()) {
-  //     throw "State vector is not the correct size";
-  //   }
-  // }
+  }
 }

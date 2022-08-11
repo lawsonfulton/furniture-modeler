@@ -1,6 +1,5 @@
 import { Constraint } from "./Constraints";
 import { minimize_L_BFGS } from "./LBFGS"
-import optimjs from "optimization-js"
 
 export default class ConstraintSolver {
   constructor(private constraints: Constraint[]) {

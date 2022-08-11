@@ -1,32 +1,11 @@
 import React, { ReactElement, useRef, useState } from "react";
 import { Stage, Layer, Rect, Text, Circle, Line, Group, Arc } from "react-konva";
 import Konva from "konva";
-import { Points } from "@react-three/drei";
 import { Tool } from "./App";
-import RadiusPicker from "./RadiusPicker";
-import Solver from "./ConstraintSolver";
 import { Vector2 } from "three";
 import { Geometry } from "./GeometryElements";
 import { GeometrySystem } from "./GeometrySystem";
 import { Constraint, FixedArcRadius, LineArcIncident, LineArcTangent, LineSegmentAligned, LineSegmentFixedPoint } from "./Constraints";
-// import { Constraint, FixedPoint, LineSegment, LinesIncident, Point } from "./Constraints";
-
-// TODO
-// x Add aligned segment constraint
-// - Make sure tangent constraint is for the right direction
-// - variable radius input
-// - 3d extrusion
-// - remove lbfgs print outs
-// ------- Bonus -------
-// - Allow moving points
-// - Add 3d extrusion
-// - clean up the code
-// - Final polish
-
-class NodeData {
-  points: number[] = [];
-  cornerRadii: number[] = [];
-}
 
 class SketchState {
   lineSegments: Geometry.LineSegment[] = [];
@@ -39,159 +18,12 @@ class SketchState {
 
 interface SketchAreaProps {
   activeTool: Tool;
+  updateElements: (elements: Geometry.Element[], state: number[]) => void;
 }
 
 export default function SketchArea(props: SketchAreaProps) {
-  // const [nodeData, setNodeData] = useState<NodeData>(new NodeData());
   const [sketchState, setSketchState] = useState<SketchState>(new SketchState());
   const [initialPathPoint, setInitialPathPoint] = useState<Vector2 | undefined>(undefined);
-
-  // Index of node whose radius is being set
-  const [settingNodeRadIndex, setSettingNodeRadIndex] = useState<number | undefined>(undefined);
-
-  // {
-  //   const geo = sketchState.geometrySystem;
-  //   const line1 = geo.addLineSegment(0.5, 2, 2.00, 1.50)
-  //   sketchState.lineSegments.push(line1);
-  //   const line2 = geo.addLineSegment(2, 1, 3, 1)
-  //   sketchState.lineSegments.push(line2);
-
-  //   // const startAngle = 1.1888;
-  //   // const endAngle = 3.236;// 270 * Math.PI / 180;
-  //   const startAngle = (180) * Math.PI / 180;
-  //   const endAngle = (270) * Math.PI / 180;
-  //   // const startAngle = (90) * Math.PI / 180;
-  //   // const endAngle = (180) * Math.PI / 180;
-  //   const radius = 0.50;
-
-  //   // const arc = geo.addArc(2, 1.5, radius, startAngle, endAngle);
-  //   // const arc = geo.addArc(2, 1.5, radius, 4, 5);
-
-  //   // const arc = geo.addArc(2, 2.5, radius, 3, 4);
-  //   const arc = geo.addArc(2, 1.5, radius, startAngle, endAngle);
-  //   sketchState.arcs.push(arc);
-
-  //   let state = sketchState.geometrySystem.state;
-
-  //   geo.addConstraint(new LineSegmentFixedPoint(state, line1, Geometry.LineEndPoint.P1));
-  //   geo.addConstraint(new LineSegmentFixedPoint(state, line2, Geometry.LineEndPoint.P2));
-
-  //   // geo.addConstraint(new LineArcTangent(line1, Geometry.LineEndPoint.P2, arc, Geometry.ArcEndPoint.START, false));
-  //   // geo.addConstraint(new LineArcTangent(line2, Geometry.LineEndPoint.P1, arc, Geometry.ArcEndPoint.END, false));
-  //   // geo.addConstraint(new FixedArcRadius(arc, radius));
-  //   // // geo.addConstraint(new LineArcIncident(line1, Geometry.LineEndPoint.P2, arc, Geometry.ArcEndPoint.START));
-  //   // geo.addConstraint(new LineArcIncident(line2, Geometry.LineEndPoint.P1, arc, Geometry.ArcEndPoint.END));
-
-  //   geo.addConstraint(new LineSegmentAligned(state, line1));
-  //   geo.addConstraint(new LineSegmentAligned(state, line2));
-  //   // geo.addConstraint(new LineArcIncident(line2, Geometry.LineEndPoint.P2, arc));
-  //   line2.setP1(state, line2.x1(state) - 0.5, line2.y1(state) + 0.5);
-  //   line2.setP2(state, line2.x2(state) + 1.5, line2.y2(state) + 1.5);
-  //   geo.solve();
-  //   // state = sketchState.geometrySystem.state;
-  //   console.log("startAngle: ", arc.startAngle(state));
-  //   console.log("endAngle: ", arc.endAngle(state));
-  //   console.log("radius: ", arc.radius(state));
-  //   console.log("x: ", arc.x(state));
-  //   console.log("y: ", arc.y(state));
-  // }
-
-
-  // {
-  //   const geo = sketchState.geometrySystem;
-  //   const line1 = geo.addLineSegment(1.10, 1.00, 1.70, 0.50)
-  //   // const line1 = geo.addLineSegment(2.20, 1.55, 3.00, 1.50)
-  //   sketchState.lineSegments.push(line1);
-  //   const line2 = geo.addLineSegment(2.10, 1.00, 3.10, 1.00)
-  //   sketchState.lineSegments.push(line2);
-
-  //   const startAngle = (180 + 45) * Math.PI / 180;
-  //   const endAngle = (360 - 45) * Math.PI / 180;// 270 * Math.PI / 180;
-  //   // const startAngle = (45) * Math.PI / 180;
-  //   // const endAngle = (100) * Math.PI / 180;
-  //   // const startAngle = (90) * Math.PI / 180;
-  //   // const endAngle = (180) * Math.PI / 180;
-  //   const radius = 0.60;
-  //   // const arc = geo.addArc(205, 130, radius, startAngle, endAngle);
-  //   const arc = geo.addArc(2, 1, radius, startAngle, endAngle);
-  //   sketchState.arcs.push(arc);
-
-  //   let state = sketchState.geometrySystem.state;
-
-  //   geo.addConstraint(new LineSegmentFixedPoint(line1, Geometry.LineEndPoint.P1, 1.10, 1.0));
-  //   geo.addConstraint(new LineSegmentFixedPoint(line2, Geometry.LineEndPoint.P2, 3.10, 1.0));
-
-  //   geo.addConstraint(new LineArcTangent(line1, arc, Geometry.ArcEndPoint.START));
-  //   geo.addConstraint(new LineArcTangent(line2, arc, Geometry.ArcEndPoint.END));
-  //   geo.addConstraint(new FixedArcRadius(arc, radius));
-  //   geo.addConstraint(new LineArcIncident(line1, Geometry.LineEndPoint.P2, arc, Geometry.ArcEndPoint.START));
-  //   geo.addConstraint(new LineArcIncident(line2, Geometry.LineEndPoint.P1, arc, Geometry.ArcEndPoint.END));
-  //   // geo.addConstraint(new LineArcIncident(line2, Geometry.LineEndPoint.P2, arc));
-
-  //   geo.solve();
-  //   state = sketchState.geometrySystem.state;
-  //   console.log("startAngle: ", arc.startAngle(state));
-  //   console.log("endAngle: ", arc.endAngle(state));
-  //   console.log("radius: ", arc.radius(state));
-  //   console.log("x: ", arc.x(state));
-  //   console.log("y: ", arc.y(state));
-
-  // }
-  // Mutate State Functions
-  // const createLineSegment = (p1: Vector2, p2: Vector2) => {
-  //   setGeometry((geometry): GeometrySystem => {
-  //     let newGeometry = geometry.shallowCopy();
-  //     newGeometry.addLineSegment(p1, p2);
-  //     return newGeometry;
-  //   });
-  // }
-
-  // const addPoint = (x: number, y: number) => {
-  //   console.log("addPoint(", x, ", ", y, ")");
-  //   setNodeData(nodeData => {
-  //     return {
-  //       ...nodeData,
-  //       points: [...nodeData.points, x, y],
-  //       cornerRadii: [...nodeData.cornerRadii, 0],
-  //     };
-  //   });
-  // }
-
-  // const setPoint = (nodeIndex: number, x: number, y: number) => {
-  //   setNodeData(nodeData => {
-  //     const newPoints = [...nodeData.points];
-  //     newPoints[nodeIndex * 2] = x;
-  //     newPoints[nodeIndex * 2 + 1] = y;
-  //     return {
-  //       ...nodeData,
-  //       points: newPoints,
-  //     };
-  //   });
-  // };
-
-  // const setRadius = (nodeIndex: number, radius: number) => {
-  //   setNodeData(nodeData => {
-  //     const newRadii = [...nodeData.cornerRadii];
-  //     newRadii[nodeIndex] = radius;
-  //     return {
-  //       ...nodeData,
-  //       cornerRadii: newRadii,
-  //     };
-  //   });
-  // };
-
-  // const setPointDirect = (i: number, x: number, y: number) => {
-  //   nodeData.points[i * 2] = x;
-  //   nodeData.points[i * 2 + 1] = y;
-  // };
-
-  // const addLineSegment = (lineSeg: Geometry.LineSegment) => {
-  //   let geoSystem = sketchState.geometrySystem.shallowCopy();
-  //   geoSystem.addElement(lineSeg);
-  //   setSketchState(sketchState => {
-  //     return { ...sketchState, lineSegments: [...sketchState.lineSegments, lineSeg] }
-  //   });
-  // }
 
   const addPointToPath = (x: number, y: number) => {
     if (initialPathPoint) {
@@ -219,12 +51,12 @@ export default function SketchArea(props: SketchAreaProps) {
           geometrySystem: geoSystem
         };
       });
+      props.updateElements(geoSystem.elements, geoSystem.state);
     }
 
     setInitialPathPoint(new Vector2(x / sceneScale, y / sceneScale));
   }
 
-  // Event Handlers
   const onClickStage = (e) => {
     const stage = e.target.getStage();
     const mousePos = stage.getPointerPosition();
@@ -234,18 +66,18 @@ export default function SketchArea(props: SketchAreaProps) {
     }
   };
 
-  const onDragNode = (e, lineIndex: number, linePoint: number) => {
+  // const onDragNode = (e, lineIndex: number, linePoint: number) => {
     // Update points array directly while dragging
     // Calling setState forces a redraw which interrupts the
     // dragging event handler. So skipping this for the time being.
-    
+
     // setSketchState(sketchState => {
     //   const state = sketchState.geometrySystem.state;
     //   const newSketchState = { ...sketchState };
     //   newSketchState.lineSegments[lineIndex].set(state, linePoint, e.target.x(), e.target.y());
     //   return newSketchState;
     // });
-  };
+  // };
   
   const updateLineSegments = (e, lineIndex1: number, LineEndPoint: Geometry.LineEndPoint, lineIndex2: number | undefined, linePoint2: number | undefined) => {
     // When done dragging trigger the state update.
@@ -256,6 +88,7 @@ export default function SketchArea(props: SketchAreaProps) {
       if(lineIndex2 !== undefined && linePoint2 !== undefined && lineIndex2 >= 0) {
         newSketchState.lineSegments[lineIndex2].set(state, linePoint2, e.target.x() / sceneScale, e.target.y() / sceneScale);
       }
+      newSketchState.geometrySystem.solve();
       return newSketchState;
     });
   };
@@ -276,9 +109,6 @@ export default function SketchArea(props: SketchAreaProps) {
 
   const addArc = (e, line1: number, point1: Geometry.LineEndPoint, line2: number, point2: Geometry.LineEndPoint) => {
     if (props.activeTool === Tool.Radius && sketchState.lineSegments.length > 1) {
-      // console.log("Choosing radius for node ", i);
-      // setSettingNodeRadIndex(i);
-
       // Need to make a shallow copy for react
       let geoSystem = sketchState.geometrySystem.shallowCopy();
       const state = geoSystem.state;
@@ -286,51 +116,32 @@ export default function SketchArea(props: SketchAreaProps) {
       let seg1 = sketchState.lineSegments[line1];
       let seg2 = sketchState.lineSegments[line2];
 
-      // seg1.set(state, point1, seg1.x(state, point1) + 1, seg1.y(state, point1) + 1);
-
-      console.log("line1", line1);
-      console.log("point1", point1);
-      console.log("line2", line2);
-      console.log("point2", point2);
-
-      const radius = 0.3;
-      const x = seg1.x(state, point1);
-      const y = seg1.y(state, point1);
-      // const startAngle = 220 * Math.PI / 180;
-      // const endAngle = 270 * Math.PI / 180;
-      // const startAngle = 0;// 220 * Math.PI / 180;
-      // const endAngle = 360 * Math.PI / 180;// 270 * Math.PI / 180;
-      // const startAngle = (180 + 60) * Math.PI / 180;
-      // const endAngle = (360 - 60) * Math.PI / 180;// 270 * Math.PI / 180;
-
       // Make a guess
       const l1p2y = seg1.y(state, point2);
       const l2p2y = seg2.y(state, point2);
       let startAngle = 0;
       let endAngle = 0;
-      if (l1p2y > l2p2y) {
+      // if (l1p2y > l2p2y) {
         startAngle = (180 + 60) * Math.PI / 180;
         endAngle = (360 - 60) * Math.PI / 180;// 270 * Math.PI / 180;
-      } else {
-        startAngle = (60) * Math.PI / 180;
-        endAngle = (90 + 30) * Math.PI / 180;// 270 * Math.PI / 180;
-      }
-      // const arc = geoSystem.addArc(x, y, 0, 0, 0);
+      // } else {
+      //   startAngle = (60) * Math.PI / 180;
+      //   endAngle = (90 + 30) * Math.PI / 180;// 270 * Math.PI / 180;
+      // }
+
+      const radius = 0.3;
+      const x = seg1.x(state, point1);
+      const y = seg1.y(state, point1);
       const arc = geoSystem.addArc(x, y, 0.2, startAngle, endAngle);
 
-      // const fixedEnd1 = Geometry.otherEnd(point1);
-      // sketchState.pointConstraints[line1][fixedEnd1] = geoSystem.addConstraint(new LineSegmentFixedPoint(state, seg1, fixedEnd1));
-      // const fixedEnd2 = Geometry.otherEnd(point2);
-      // geoSystem.addConstraint(new LineSegmentFixedPoint(state, seg2, fixedEnd2));
 
-
-      if (l1p2y > l2p2y) {
+      // if (l1p2y > l2p2y) {
         geoSystem.addConstraint(new LineArcTangent(seg1, Geometry.LineEndPoint.P2, arc, Geometry.ArcEndPoint.START, false));
         geoSystem.addConstraint(new LineArcTangent(seg2, Geometry.LineEndPoint.P1, arc, Geometry.ArcEndPoint.END, false));
-      } else {
-        geoSystem.addConstraint(new LineArcTangent(seg1, Geometry.LineEndPoint.P2, arc, Geometry.ArcEndPoint.END, true));
-        geoSystem.addConstraint(new LineArcTangent(seg2, Geometry.LineEndPoint.P1, arc, Geometry.ArcEndPoint.START, true));
-      }
+      // } else {
+      //   geoSystem.addConstraint(new LineArcTangent(seg1, Geometry.LineEndPoint.P2, arc, Geometry.ArcEndPoint.END, true));
+      //   geoSystem.addConstraint(new LineArcTangent(seg2, Geometry.LineEndPoint.P1, arc, Geometry.ArcEndPoint.START, true));
+      // }
 
       geoSystem.addConstraint(new FixedArcRadius(arc, radius));
       geoSystem.addConstraint(new LineArcIncident(seg1, Geometry.LineEndPoint.P2, arc, Geometry.ArcEndPoint.START));
@@ -338,12 +149,6 @@ export default function SketchArea(props: SketchAreaProps) {
 
       geoSystem.addConstraint(new LineSegmentAligned(state, seg1));
       geoSystem.addConstraint(new LineSegmentAligned(state, seg2));
-
-    // geo.addConstraint(new LineArcTangent(line1, arc, Geometry.ArcEndPoint.START));
-    // geo.addConstraint(new LineArcTangent(line2, arc, Geometry.ArcEndPoint.END));
-    // geo.addConstraint(new FixedArcRadius(arc, radius));
-    // geo.addConstraint(new LineArcIncident(line1, Geometry.LineEndPoint.P2, arc, Geometry.ArcEndPoint.START));
-    // geo.addConstraint(new LineArcIncident(line2, Geometry.LineEndPoint.P1, arc, Geometry.ArcEndPoint.END));
 
       geoSystem.solve();
 
@@ -354,6 +159,7 @@ export default function SketchArea(props: SketchAreaProps) {
           geometrySystem: geoSystem
         };
       }); 
+      props.updateElements(geoSystem.elements, geoSystem.state);
     }
   }
 
@@ -377,12 +183,9 @@ export default function SketchArea(props: SketchAreaProps) {
             onDragEnd={e => updateLineSegments(e, i, Geometry.LineEndPoint.P1, prevLine, Geometry.LineEndPoint.P2)}
             onMouseOver={e => magnifyNode(e)}
             onMouseOut={e => resetNode(e)}
-            // onClick={e => prevLine !== undefined ? addArc(e, i, Geometry.LineEndPoint.P1, prevLine, Geometry.LineEndPoint.P2) : undefined}
             onClick={e => prevLine !== undefined ? addArc(e, prevLine, Geometry.LineEndPoint.P2, i, Geometry.LineEndPoint.P1) : undefined}
-
           />);
 
-          // if(i === props.lineSegments.length - 1) { // Add the last node
           nodes.push(
             <Circle
               key={"node-" + i.toString() + "-1"}
@@ -395,10 +198,7 @@ export default function SketchArea(props: SketchAreaProps) {
               onMouseOver={e => magnifyNode(e)}
               onMouseOut={e => resetNode(e)}
               onClick={e => nextLine !== undefined ? addArc(e, i, Geometry.LineEndPoint.P2, nextLine, Geometry.LineEndPoint.P1) : undefined}
-            // onClick={e => onClickNode(e, lineIndex)}
-            // onDragMove={e => onDragNode(e, lineIndex, linePoint)}
-          />);
-        // }
+            />);
     }
 
     // If no line segments yet

@@ -5,39 +5,35 @@ import Viewer3D from "./Viewer3D";
 import SketchArea from "./SketchArea";
 import ToolBar from "./ToolBar";
 import 'antd/dist/antd.css';
+import { Geometry } from "./GeometryElements";
 
 export enum Tool {
   None = 1,
   Polygon = 2,
   Radius = 3
 }
-
-export class AppState {
-  // points: number[] = [];
-  // linePoints: number[] = [];
-  // isDrawing: boolean = false;
+class AppState {
+  elements: Geometry.Element[] = [];
+  state: number[] = [];
 }
-export interface StateCallbacks {
-  // addPoint: (x: number, y: number) => void;
-  // setPoint: (i: number, x: number, y: number) => void;
-  // setLinePoint: (i: number, x: number, y: number) => void;
-}
-
 const App = () => {
-  const [state, setState] = useState<AppState>(new AppState());
   const [activeTool, setTool] = useState<Tool>(Tool.None);
+  const [appState, setAppState] = useState<AppState>(new AppState());
 
+  const updateElements = (newElements: Geometry.Element[], state: number[]) => {
+    setAppState({ ...appState, elements: [...newElements], state: [...state] });
+  }
 
   return (
     <div>
       <ToolBar activeTool={activeTool} setTool={setTool} />
       <div style={{ display: "flex" }}>
-        <div style={{ width: "100vw", height: "100vh", display: "inline-block" }}>
-          <SketchArea activeTool={activeTool} />
+        <div style={{ width: "50vw", height: "100vh", display: "inline-block" }}>
+          <SketchArea activeTool={activeTool} updateElements={updateElements} />
         </div>
-        {/* <div style={{ width: "50vw", height: "100vh", display: "inline-block" }}>
-          <Viewer3D />
-        </div> */}
+        <div style={{ width: "50vw", height: "100vh", display: "inline-block" }}>
+          <Viewer3D elements={appState.elements} state={appState.state} />
+        </div>
       </div>
 
     </div>
