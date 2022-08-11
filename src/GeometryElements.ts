@@ -18,6 +18,7 @@ export namespace Geometry {
     return end === LineEndPoint.P1 ? LineEndPoint.P2 : LineEndPoint.P1;
   }
 
+
   export class LineSegment extends Element {
     constructor(x1: number, y1: number, x2: number, y2: number, state: number[], offset: number) {
       super(offset);
@@ -124,6 +125,10 @@ export namespace Geometry {
   export enum ArcEndPoint {
     START = 0,
     END = 1
+  }
+
+  export function otherEndArc(end: ArcEndPoint): ArcEndPoint {
+    return end === ArcEndPoint.START ? ArcEndPoint.END : ArcEndPoint.START;
   }
 
   export class Arc extends Element {

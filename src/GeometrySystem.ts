@@ -33,8 +33,9 @@ export class GeometrySystem {
     return arc;
   }
 
-  addConstraint(c: Constraint) {
+  addConstraint(c: Constraint): Constraint {
     this.constraints.push(c);
+    return c;
   }
 
 
