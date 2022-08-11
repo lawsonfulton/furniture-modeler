@@ -2,45 +2,22 @@ import { Vector2 } from "three";
 
 export namespace Geometry {
   export abstract class Element {
-
     // Offset into the the global state vector
     constructor(protected offset: number) { }
 
     // Number of degrees of freedom for this element
     abstract dims(): number;
-
-    // // Copy this elements state into a global state vector
-    // abstract assembleState(state: number[], offset: number): void;
-
-    // // Update this elements state from a global state vector
-    // abstract updateFromState(state: number[], offset: number): void;
   }
-
-  // export class Point extends Element {
-  //   constructor(public v: Vector2, offset: number) { super(offset) }
-  //   dims(): number {
-  //     return 2;
-  //   }
-  //   // assembleState(state: number[], offset: number): void {
-  //   //   state[offset] = this.v.x;
-  //   //   state[offset + 1] = this.v.y;
-  //   // }
-  //   // updateFromState(state: number[], offset: number): void {
-  //   //   this.v.x = state[offset];
-  //   //   this.v.y = state[offset + 1];
-  //   // }
-  //   x(state: number[]): number {
-  //     return state[this.offset];
-  //   }
-  //   y(state: number[]): number {
-  //     return state[this.offset + 1];
-  //   }
-  // }
 
   export enum LineEndPoint {
     P1 = 0,
     P2 = 1,
   }
+
+  export function otherEnd(end: LineEndPoint): LineEndPoint {
+    return end === LineEndPoint.P1 ? LineEndPoint.P2 : LineEndPoint.P1;
+  }
+
   export class LineSegment extends Element {
     constructor(x1: number, y1: number, x2: number, y2: number, state: number[], offset: number) {
       super(offset);
@@ -81,6 +58,26 @@ export namespace Geometry {
     }
     y2i(): number {
       return this.offset + 3;
+    }
+
+    xi(lineEndPoint: LineEndPoint): number {
+      if (lineEndPoint === LineEndPoint.P1) {
+        return this.x1i();
+      } else if (lineEndPoint === LineEndPoint.P2) {
+        return this.x2i();
+      } else {
+        throw "Point index must be 0 or 1";
+      }
+    }
+
+    yi(lineEndPoint: LineEndPoint): number {
+      if (lineEndPoint === LineEndPoint.P1) {
+        return this.y1i();
+      } else if (lineEndPoint === LineEndPoint.P2) {
+        return this.y2i();
+      } else {
+        throw "Point index must be 0 or 1";
+      }
     }
 
     x(state: number[], lineEndPoint: LineEndPoint): number {
@@ -124,6 +121,11 @@ export namespace Geometry {
     }
   }
 
+  export enum ArcEndPoint {
+    START = 0,
+    END = 1
+  }
+
   export class Arc extends Element {
     constructor(x: number, y: number, radius: number, startAngle: number, endAngle: number, state: number[], offset: number) {
       super(offset);
@@ -158,7 +160,15 @@ export namespace Geometry {
     endAngle(state: number[]): number {
       return state[this.endAnglei()];
     }
-
+    angle(state: number[], arcEndPoint: ArcEndPoint): number {
+      if (arcEndPoint === ArcEndPoint.START) {
+        return this.startAngle(state);
+      } else if (arcEndPoint === ArcEndPoint.END) {
+        return this.endAngle(state);
+      } else {
+        throw "Arc end point index must be 0 or 1";
+      }
+    }
 
     xi(): number {
       return this.offset;
@@ -174,6 +184,15 @@ export namespace Geometry {
     }
     endAnglei(): number {
       return this.offset + 4;
+    }
+    anglei(arcEndPoint: ArcEndPoint): number {
+      if (arcEndPoint === ArcEndPoint.START) {
+        return this.startAnglei();
+      } else if (arcEndPoint === ArcEndPoint.END) {
+        return this.endAnglei();
+      } else {
+        throw "Arc end point index must be 0 or 1";
+      }
     }
 
 

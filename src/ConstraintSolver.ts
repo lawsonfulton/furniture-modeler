@@ -1,39 +1,58 @@
 import { Constraint } from "./Constraints";
+import { minimize_L_BFGS } from "./LBFGS"
+import optimjs from "optimization-js"
+// import "./nlopt/nlopt_gen";
+// import nlopt from './nlopt/nlopt_gen.wasm?init'
+// import 'nlopt-js'
+// const nlopt = (await import("nlopt-js")).default
+
+
+// declare function require(name: string);
+// const nlopt = require('nlopt-js');//.appPromise;
 
 export default class ConstraintSolver {
   constructor(private constraints: Constraint[]) {
-    this.constraints = constraints;
   }
 
-  value(allPoints: number[]): number {
+  value(state: number[]): number {
     let sum = 0;
     for (const constraint of this.constraints) {
-      sum += constraint.value(allPoints); // ** 2
+      sum += constraint.value(state); // ** 2
     }
     return sum;
   }
 
-  gradient(allPoints: number[]): number[] {
+  gradient(state: number[]): number[] {
     // TODO my gradient is wrong because I'm summing over squares 
     // Do I need to sum over squares? unclear.
-    let grad: number[] = Array(allPoints.length).fill(0);
+    let grad: number[] = Array(state.length).fill(0);
     for (const constraint of this.constraints) {
-      constraint.gradient(allPoints, grad);
+      constraint.gradient(state, grad);
     }
     return grad;
   }
 
-  solve(allPoints: number[]): number[] {
+  scale: number = 1;//0.1;
+  solve(state: number[]): number[] {
+    let x = [...state];
+
+    const f = (x: number[]) => this.value(x);
+    const fp = (x: number[]) => this.gradient(x);
+    const sol = minimize_L_BFGS(f, fp, x);
+    console.log("sol: ", sol);
+    return sol.argument;
+  }
+
+  solve2(state: number[]): number[] {
     // TODO check this code and need to find out the name of this gradient descent algo
-    let x = [...allPoints];
+    let x = [...state];
     let grad = this.gradient(x);
     let prevValue = this.value(x);
     let prevGrad = grad;
     let prevX = x;
     let prevGradNorm = Math.sqrt(grad.reduce((a, b) => a + b ** 2, 0));
-    // let prevGradNorm = 0;
     let i = 0;
-    while (i < 100) {
+    while (i < 500) {
       const gradNorm = Math.sqrt(grad.reduce((a, b) => a + b ** 2, 0));
       const alpha = prevValue / (prevGradNorm ** 2);
       x = prevX.map((v, i) => v - alpha * grad[i]);
@@ -59,6 +78,50 @@ export default class ConstraintSolver {
     }
     return x;
   }
+
+  // solve(state: number[]): number[] {
+
+
+  //   const f = (x: number[]) => this.value(x);
+  //   const fp = (x: number[]) => this.gradient(x);
+  //   // const sol = optimjs.minimize_L_BFGS(f, fp, state);
+  //   const sol = optimjs.minimize_Powell(f, state);
+  //   console.log("sol: ", sol);
+
+  //   return sol.argument;
+  // }
+
+  // solve(state: number[]): number[] {
+
+  //   // console.log(global)
+  //   // console.log(window.nlopt)
+  //   console.log(nlopt)
+  //   console.log(nlopt.ready)
+  //   console.log(nlopt.GC)
+  //   // console.log(nlopt.ready)
+  //   nlopt.ready.then(nlopt => {
+  //     console.log(nlopt)
+
+  //     console.log("going")
+  //     let opt = nlopt.Optimize(nlopt.Algorithm.NLOPT_LD_LBFGS, state.length)
+  //     opt.setMinObjective((x, grad) => {
+  //       console.log(x)
+  //       if (grad) {
+  //         const newGrad = this.gradient(x);
+  //         for (let i = 0; i < grad.length; i++) {
+  //           grad[i] = newGrad[i];
+  //         }
+  //         return this.value(x);
+  //       }
+  //     }, 1e-4);
+  //     const res = opt.optimize(state);
+  //     for (let i = 0; i < state.length; i++) {
+  //       state[i] = res[i];
+  //     }
+  //   });
+  //   return state;
+  // }
+
 }
 
 // {

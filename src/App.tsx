@@ -32,12 +32,12 @@ const App = () => {
     <div>
       <ToolBar activeTool={activeTool} setTool={setTool} />
       <div style={{ display: "flex" }}>
-        <div style={{ width: "50vw", height: "100vh", display: "inline-block" }}>
+        <div style={{ width: "100vw", height: "100vh", display: "inline-block" }}>
           <SketchArea activeTool={activeTool} />
         </div>
-        <div style={{ width: "50vw", height: "100vh", display: "inline-block" }}>
+        {/* <div style={{ width: "50vw", height: "100vh", display: "inline-block" }}>
           <Viewer3D />
-        </div>
+        </div> */}
       </div>
 
     </div>
