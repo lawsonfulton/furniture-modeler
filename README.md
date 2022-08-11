@@ -1,4 +1,5 @@
 # furniture-modeler
+[Live Demo](http://furniture-modeler.vercel.app/)
 
 ## Running
 Requires [vercel cli](https://vercel.com/docs/cli#introduction/installing-the-cli)
